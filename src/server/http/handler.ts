@@ -18,7 +18,10 @@ function assertSameOrigin(req: NextRequest) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return;
   const origin = req.headers.get("origin") ?? (req.headers.get("referer") ? new URL(req.headers.get("referer")!).origin : null);
   const allowed = new Set([new URL(config().APP_URL).origin, req.nextUrl.origin]);
-  if (!origin || !allowed.has(origin)) throw new AppError("FORBIDDEN", "Cross-origin request blocked");
+  // Behind a reverse proxy the public host arrives in X-Forwarded-Host / Host: compare hosts.
+  const hosts = new Set([req.headers.get("x-forwarded-host"), req.headers.get("host")].filter(Boolean).flatMap((h) => h!.split(",").map((x) => x.trim())));
+  const sameHost = origin ? hosts.has(new URL(origin).host) : false;
+  if (!origin || (!allowed.has(origin) && !sameHost)) throw new AppError("FORBIDDEN", "Cross-origin request blocked");
 }
 
 export function toErrorResponse(e: unknown) {
