@@ -1,0 +1,47 @@
+# Local / demo stack: PostgreSQL + application.
+#   docker compose up --build
+#   docker compose run --rm seed        # optional demo data
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: expense
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-expense}
+      POSTGRES_DB: expense
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expense"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgresql://expense:${POSTGRES_PASSWORD:-expense}@db:5432/expense?schema=public
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      APP_SECRET: ${APP_SECRET:?Set APP_SECRET (openssl rand -base64 48)}
+      CRON_SECRET: ${CRON_SECRET:-}
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /app/storage
+      OCR_PROVIDER: ${OCR_PROVIDER:-mock}
+      EMAIL_DRIVER: ${EMAIL_DRIVER:-console}
+    volumes: [receipts:/app/storage]
+
+  seed:
+    build: { context: ., target: build }
+    profiles: [tools]
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://expense:${POSTGRES_PASSWORD:-expense}@db:5432/expense?schema=public
+      APP_SECRET: ${APP_SECRET:?Set APP_SECRET}
+      STORAGE_LOCAL_DIR: /app/storage
+    volumes: [receipts:/app/storage]
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+
+volumes:
+  pgdata:
+  receipts:

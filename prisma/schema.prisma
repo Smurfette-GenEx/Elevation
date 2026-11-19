@@ -1,0 +1,1003 @@
+// International Expense Management Platform — data model
+// Conventions:
+//  * Monetary values are Decimal(19,4) (amounts) / Decimal(20,10) (FX rates). Never floats.
+//  * Original transaction amounts are immutable once submitted; FX conversions are stored as
+//    snapshots (rate, source, effective date) alongside the original values.
+//  * Every business table carries legalEntityId (directly or via its parent) so that the
+//    authorization scope engine can restrict access by organisational scope.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum Role {
+  EMPLOYEE
+  LINE_MANAGER
+  DEPARTMENT_MANAGER
+  FINANCE_CONTROLLER
+  LOCAL_FINANCE
+  GROUP_FINANCE
+  CFO
+  SYSTEM_ADMIN
+}
+
+enum ScopeType {
+  GROUP
+  COUNTRY
+  LEGAL_ENTITY
+  DEPARTMENT
+  COST_CENTER
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  INFO_REQUESTED
+  APPROVED
+  REJECTED
+  READY_FOR_PAYMENT
+  PAYMENT_INITIATED
+  PAID
+}
+
+enum AccountingStatus {
+  NOT_READY
+  READY
+  EXPORTED
+}
+
+enum PaymentMethod {
+  PERSONAL_CARD
+  CORPORATE_CARD
+  CASH
+  BANK_TRANSFER
+  COMPANY_PAID
+}
+
+enum ApproverType {
+  LINE_MANAGER
+  DEPARTMENT_MANAGER
+  ROLE
+  SPECIFIC_USER
+}
+
+enum ApprovalTaskStatus {
+  WAITING
+  PENDING
+  APPROVED
+  REJECTED
+  INFO_REQUESTED
+  SKIPPED
+  CANCELLED
+}
+
+enum PolicyRuleType {
+  CATEGORY_MAX_PER_ITEM
+  DAILY_MEAL_ALLOWANCE
+  ACCOMMODATION_NIGHTLY_MAX
+  RECEIPT_REQUIRED_ABOVE
+  WEEKEND_EXPENSE
+  PUBLIC_HOLIDAY_EXPENSE
+  DUPLICATE_EXPENSE
+  DUPLICATE_RECEIPT
+  CATEGORY_NOT_ALLOWED
+  UNUSUAL_AMOUNT
+  BUDGET_OVERRUN
+  LATE_SUBMISSION
+  MISSING_DESCRIPTION
+}
+
+enum PolicyAction {
+  BLOCK
+  WARN
+  REQUIRE_EXCEPTION
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ViolationStatus {
+  OPEN
+  EXCEPTION_APPROVED
+  EXCEPTION_REJECTED
+  RESOLVED
+}
+
+enum FxSource {
+  ECB
+  MANUAL
+  CORPORATE
+  IDENTITY
+}
+
+enum OcrStatus {
+  NOT_REQUESTED
+  PENDING
+  COMPLETED
+  FAILED
+  CONFIRMED
+}
+
+enum AdvanceStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PAID
+  PARTIALLY_SETTLED
+  SETTLED
+}
+
+enum PaymentBatchStatus {
+  DRAFT
+  INITIATED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SENT
+  PAID
+  FAILED
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+}
+
+enum ErpFormat {
+  GENERIC
+  SAP
+  ORACLE
+  DYNAMICS365
+  SAGE
+}
+
+enum BudgetBasis {
+  ACTUAL_ONLY
+  ACTUAL_AND_PENDING
+}
+
+enum TripStatus {
+  PLANNED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ───────────────────────── Organisation ─────────────────────────
+
+model Group {
+  id                String      @id @default(cuid())
+  name              String
+  reportingCurrency String      @db.Char(3)
+  budgetBasis       BudgetBasis @default(ACTUAL_AND_PENDING)
+  // Days after which receipts/expense data may be purged (legal retention, e.g. 10 years)
+  retentionYears    Int         @default(10)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  countries      Country[]
+  legalEntities  LegalEntity[]
+  users          User[]
+  categories     ExpenseCategory[]
+  policyRules    PolicyRule[]
+  workflows      ApprovalWorkflow[]
+  projects       Project[]
+  auditLogs      AuditLog[]
+}
+
+model Country {
+  code            String   @id @db.Char(2) // ISO 3166-1 alpha-2
+  groupId         String
+  name            String
+  defaultCurrency String   @db.Char(3)
+  weekendDays     Int[]    @default([0, 6]) // 0 = Sunday … 6 = Saturday
+  group           Group    @relation(fields: [groupId], references: [id])
+  legalEntities   LegalEntity[]
+  holidays        PublicHoliday[]
+}
+
+model PublicHoliday {
+  id          String   @id @default(cuid())
+  countryCode String   @db.Char(2)
+  date        DateTime @db.Date
+  name        String
+  country     Country  @relation(fields: [countryCode], references: [code])
+
+  @@unique([countryCode, date])
+}
+
+model LegalEntity {
+  id                 String   @id @default(cuid())
+  groupId            String
+  countryCode        String   @db.Char(2)
+  code               String   @unique
+  name               String
+  functionalCurrency String   @db.Char(3)
+  taxId              String?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  group            Group               @relation(fields: [groupId], references: [id])
+  country          Country             @relation(fields: [countryCode], references: [code])
+  businessUnits    BusinessUnit[]
+  departments      Department[]
+  costCenters      CostCenter[]
+  users            User[]
+  reports          ExpenseReport[]
+  accountingConfig EntityAccountingConfig?
+  accountMappings  AccountMapping[]
+  periods          AccountingPeriod[]
+  budgets          Budget[]
+  mileageRates     MileageRate[]
+  paymentBatches   PaymentBatch[]
+  exports          AccountingExport[]
+  advances         Advance[]
+  trips            Trip[]
+
+  @@index([groupId])
+  @@index([countryCode])
+}
+
+model BusinessUnit {
+  id            String       @id @default(cuid())
+  legalEntityId String
+  code          String
+  name          String
+  legalEntity   LegalEntity  @relation(fields: [legalEntityId], references: [id])
+  departments   Department[]
+
+  @@unique([legalEntityId, code])
+}
+
+model Department {
+  id             String        @id @default(cuid())
+  legalEntityId  String
+  businessUnitId String?
+  code           String
+  name           String
+  managerId      String?
+  legalEntity    LegalEntity   @relation(fields: [legalEntityId], references: [id])
+  businessUnit   BusinessUnit? @relation(fields: [businessUnitId], references: [id])
+  manager        User?         @relation("DepartmentManager", fields: [managerId], references: [id])
+  members        User[]        @relation("DepartmentMembers")
+  costCenters    CostCenter[]
+  budgets        Budget[]
+
+  @@unique([legalEntityId, code])
+}
+
+model CostCenter {
+  id            String      @id @default(cuid())
+  legalEntityId String
+  departmentId  String?
+  code          String
+  name          String
+  active        Boolean     @default(true)
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  department    Department? @relation(fields: [departmentId], references: [id])
+  users         User[]
+  expenses      Expense[]
+  budgets       Budget[]
+
+  @@unique([legalEntityId, code])
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  groupId       String
+  legalEntityId String?
+  code          String    @unique
+  name          String
+  ownerId       String?
+  active        Boolean   @default(true)
+  group         Group     @relation(fields: [groupId], references: [id])
+  expenses      Expense[]
+  budgets       Budget[]
+  trips         Trip[]
+}
+
+// ─────────────────────── Identity & access ───────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  groupId          String
+  email            String    @unique
+  name             String
+  passwordHash     String?
+  // Subject identifier from an external IdP (Microsoft Entra ID object id) for future SSO
+  externalId       String?   @unique
+  legalEntityId    String
+  departmentId     String?
+  costCenterId     String?
+  countryCode      String    @db.Char(2)
+  managerId        String?
+  employeeNumber   String?
+  locale           String    @default("en-GB")
+  active           Boolean   @default(true)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  // GDPR: pseudonymised users keep financial history but lose personal identifiers
+  anonymizedAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  group             Group            @relation(fields: [groupId], references: [id])
+  legalEntity       LegalEntity      @relation(fields: [legalEntityId], references: [id])
+  department        Department?      @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  costCenter        CostCenter?      @relation(fields: [costCenterId], references: [id])
+  manager           User?            @relation("ManagerReports", fields: [managerId], references: [id])
+  directReports     User[]           @relation("ManagerReports")
+  managedDepartments Department[]    @relation("DepartmentManager")
+  roles             RoleAssignment[]
+  sessions          Session[]
+  reports           ExpenseReport[]  @relation("ReportEmployee")
+  approvalTasks     ApprovalTask[]   @relation("TaskApprover")
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+  delegationsGiven  ApprovalDelegation[] @relation("DelegationFrom")
+  delegationsTaken  ApprovalDelegation[] @relation("DelegationTo")
+  receipts          Receipt[]
+  advances          Advance[]
+  trips             Trip[]
+
+  @@index([legalEntityId])
+  @@index([managerId])
+  @@index([departmentId])
+}
+
+// A role granted on an organisational scope. scopeId is null for GROUP scope.
+// e.g. FINANCE_CONTROLLER on LEGAL_ENTITY "FR01"; GROUP_FINANCE on GROUP.
+model RoleAssignment {
+  id        String    @id @default(cuid())
+  userId    String
+  role      Role
+  scopeType ScopeType
+  scopeId   String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, scopeType, scopeId])
+  @@index([role, scopeType, scopeId])
+}
+
+model Session {
+  id         String   @id // SHA-256 of the opaque token; the raw token only lives in the cookie
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ApprovalDelegation {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  fromUser   User     @relation("DelegationFrom", fields: [fromUserId], references: [id])
+  toUser     User     @relation("DelegationTo", fields: [toUserId], references: [id])
+
+  @@index([fromUserId, startsAt, endsAt])
+}
+
+// ───────────────────────── Configuration ─────────────────────────
+
+model ExpenseCategory {
+  id                String   @id @default(cuid())
+  groupId           String
+  code              String
+  name              String
+  isMileage         Boolean  @default(false)
+  isMeal            Boolean  @default(false)
+  isAccommodation   Boolean  @default(false)
+  requiresAttendees Boolean  @default(false)
+  active            Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  group             Group    @relation(fields: [groupId], references: [id])
+  expenses          Expense[]
+  mappings          AccountMapping[]
+  policyRules       PolicyRule[]
+  budgets           Budget[]
+
+  @@unique([groupId, code])
+}
+
+model PolicyRule {
+  id            String         @id @default(cuid())
+  groupId       String
+  name          String
+  type          PolicyRuleType
+  // Optional scope filters — null means "applies to all"
+  countryCode   String?        @db.Char(2)
+  legalEntityId String?
+  categoryId    String?
+  // Rule parameters: e.g. { "maxAmount": "150" }, { "multiplier": 3 }, { "maxDaysAfter": 60 }
+  params        Json           @default("{}")
+  currency      String?        @db.Char(3) // currency in which monetary params are expressed
+  action        PolicyAction
+  severity      Severity
+  active        Boolean        @default(true)
+  // More specific rules (higher priority) override generic ones of the same type
+  priority      Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  group         Group          @relation(fields: [groupId], references: [id])
+  category      ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  violations    PolicyViolation[]
+
+  @@index([groupId, type, active])
+}
+
+model MileageRate {
+  id            String      @id @default(cuid())
+  legalEntityId String
+  vehicleType   String      // CAR, MOTORBIKE, EV …
+  ratePerKm     Decimal     @db.Decimal(10, 4)
+  currency      String      @db.Char(3)
+  validFrom     DateTime    @db.Date
+  validTo       DateTime?   @db.Date
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+
+  @@index([legalEntityId, vehicleType, validFrom])
+}
+
+model ExchangeRate {
+  id            String   @id @default(cuid())
+  baseCurrency  String   @db.Char(3)
+  quoteCurrency String   @db.Char(3)
+  // 1 baseCurrency = rate quoteCurrency
+  rate          Decimal  @db.Decimal(20, 10)
+  effectiveDate DateTime @db.Date
+  source        FxSource
+  createdById   String?
+  justification String?
+  createdAt     DateTime @default(now())
+
+  @@unique([baseCurrency, quoteCurrency, effectiveDate, source])
+  @@index([baseCurrency, quoteCurrency, effectiveDate])
+}
+
+model ApprovalWorkflow {
+  id                String   @id @default(cuid())
+  groupId           String
+  name              String
+  description       String?
+  // Matching conditions — null means "any". Most specific + highest priority wins.
+  countryCode       String?  @db.Char(2)
+  legalEntityId     String?
+  departmentId      String?
+  categoryCode      String?
+  projectId         String?
+  costCenterId      String?
+  priority          Int      @default(0)
+  thresholdCurrency String   @db.Char(3) // currency for step min/max amounts
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  group             Group    @relation(fields: [groupId], references: [id])
+  steps             ApprovalStepDefinition[]
+  reports           ExpenseReport[]
+}
+
+model ApprovalStepDefinition {
+  id              String           @id @default(cuid())
+  workflowId      String
+  sequence        Int
+  name            String
+  approverType    ApproverType
+  role            Role?
+  userId          String?
+  // Step applies when report total (in workflow thresholdCurrency) >= minAmount (and < maxAmount when set)
+  minAmount       Decimal          @default(0) @db.Decimal(19, 4)
+  maxAmount       Decimal?         @db.Decimal(19, 4)
+  // Step also applies (regardless of amount) when the report has an exception pending in these severities
+  requiredOnException Boolean      @default(false)
+  // Step applies only if the report contains at least one of these category codes (empty = all)
+  categoryCodes   String[]         @default([])
+  slaHours        Int              @default(72)
+  escalateToRole  Role?
+  workflow        ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, sequence])
+}
+
+model NotificationPreference {
+  id      String  @id @default(cuid())
+  userId  String
+  type    String
+  inApp   Boolean @default(true)
+  email   Boolean @default(true)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+// ─────────────────────── Expense transactions ───────────────────────
+
+model Trip {
+  id                 String      @id @default(cuid())
+  employeeId         String
+  legalEntityId      String
+  projectId          String?
+  purpose            String
+  destinationCountry String      @db.Char(2)
+  destinationCity    String
+  startDate          DateTime    @db.Date
+  endDate            DateTime    @db.Date
+  estimatedCost      Decimal?    @db.Decimal(19, 4)
+  currency           String      @db.Char(3)
+  status             TripStatus  @default(PLANNED)
+  createdAt          DateTime    @default(now())
+  employee           User        @relation(fields: [employeeId], references: [id])
+  legalEntity        LegalEntity @relation(fields: [legalEntityId], references: [id])
+  project            Project?    @relation(fields: [projectId], references: [id])
+  reports            ExpenseReport[]
+  advances           Advance[]
+
+  @@index([employeeId])
+  @@index([legalEntityId])
+}
+
+model ExpenseReport {
+  id                  String           @id @default(cuid())
+  number              String           @unique
+  employeeId          String
+  legalEntityId       String
+  tripId              String?
+  title               String
+  purpose             String?
+  status              ReportStatus     @default(DRAFT)
+  accountingStatus    AccountingStatus @default(NOT_READY)
+  // Reimbursement / functional currency of the employing legal entity
+  currency            String           @db.Char(3)
+  reportingCurrency   String           @db.Char(3)
+  totalFunctional     Decimal          @default(0) @db.Decimal(19, 4)
+  totalReporting      Decimal          @default(0) @db.Decimal(19, 4)
+  reimbursableAmount  Decimal          @default(0) @db.Decimal(19, 4)
+  advanceApplied      Decimal          @default(0) @db.Decimal(19, 4)
+  netPayable          Decimal          @default(0) @db.Decimal(19, 4)
+  workflowId          String?
+  currentStep         Int?
+  submittedAt         DateTime?
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  paidAt              DateTime?
+  exportedAt          DateTime?
+  paymentExportedAt   DateTime?
+  accountingPeriod    String?          // "YYYY-MM"
+  version             Int              @default(0) // optimistic concurrency
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  employee     User              @relation("ReportEmployee", fields: [employeeId], references: [id])
+  legalEntity  LegalEntity       @relation(fields: [legalEntityId], references: [id])
+  trip         Trip?             @relation(fields: [tripId], references: [id])
+  workflow     ApprovalWorkflow? @relation(fields: [workflowId], references: [id])
+  expenses     Expense[]
+  tasks        ApprovalTask[]
+  comments     ReportComment[]
+  violations   PolicyViolation[]
+  settlements  AdvanceSettlement[]
+  payments     Payment[]
+  journalLines JournalLine[]
+
+  @@index([employeeId, status])
+  @@index([legalEntityId, status])
+  @@index([status, submittedAt])
+  @@index([legalEntityId, submittedAt])
+}
+
+model Expense {
+  id                 String        @id @default(cuid())
+  reportId           String
+  lineNo             Int
+  expenseDate        DateTime      @db.Date
+  categoryId         String
+  merchant           String
+  description        String
+  countryCode        String        @db.Char(2) // where incurred
+  // ── Original transaction values (never overwritten by FX changes)
+  currency           String        @db.Char(3)
+  grossAmount        Decimal       @db.Decimal(19, 4)
+  taxAmount          Decimal       @default(0) @db.Decimal(19, 4)
+  netAmount          Decimal       @db.Decimal(19, 4)
+  taxRate            Decimal?      @db.Decimal(7, 4)
+  // ── FX snapshot: transaction -> functional currency
+  fxRateFunctional   Decimal       @db.Decimal(20, 10)
+  fxSourceFunctional FxSource
+  fxDateFunctional   DateTime      @db.Date
+  fxOverridden       Boolean       @default(false)
+  fxOverrideReason   String?
+  fxOverrideById     String?
+  functionalAmount   Decimal       @db.Decimal(19, 4)
+  functionalTax      Decimal       @default(0) @db.Decimal(19, 4)
+  // ── FX snapshot: transaction -> group reporting currency
+  fxRateReporting    Decimal       @db.Decimal(20, 10)
+  fxSourceReporting  FxSource
+  reportingAmount    Decimal       @db.Decimal(19, 4)
+  // ── Analytical dimensions
+  costCenterId       String
+  projectId          String?
+  budgetCode         String?
+  paymentMethod      PaymentMethod
+  reimbursable       Boolean       @default(true)
+  attendees          String?
+  // ── Mileage
+  distanceKm         Decimal?      @db.Decimal(10, 2)
+  vehicleType        String?
+  fromLocation       String?
+  toLocation         String?
+  mileageRate        Decimal?      @db.Decimal(10, 4)
+  nights             Int?          // accommodation: number of nights covered by the line
+  // ── Supporting docs & controls
+  receiptId          String?
+  receiptMissingReason String?
+  fingerprint        String        // normalised hash for duplicate detection
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  report       ExpenseReport     @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  category     ExpenseCategory   @relation(fields: [categoryId], references: [id])
+  costCenter   CostCenter        @relation(fields: [costCenterId], references: [id])
+  project      Project?          @relation(fields: [projectId], references: [id])
+  receipt      Receipt?          @relation(fields: [receiptId], references: [id])
+  violations   PolicyViolation[]
+
+  @@unique([reportId, lineNo])
+  @@index([fingerprint])
+  @@index([costCenterId, expenseDate])
+  @@index([projectId])
+  @@index([categoryId, expenseDate])
+}
+
+model Receipt {
+  id           String    @id @default(cuid())
+  ownerId      String
+  legalEntityId String
+  storageKey   String    @unique
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  ocrStatus    OcrStatus @default(NOT_REQUESTED)
+  ocrProvider  String?
+  ocrData      Json?
+  ocrConfirmedAt DateTime?
+  createdAt    DateTime  @default(now())
+  owner        User      @relation(fields: [ownerId], references: [id])
+  expenses     Expense[]
+
+  @@index([sha256])
+  @@index([ownerId])
+}
+
+model PolicyViolation {
+  id            String          @id @default(cuid())
+  reportId      String
+  expenseId     String?
+  ruleId        String?
+  ruleType      PolicyRuleType
+  severity      Severity
+  action        PolicyAction
+  message       String
+  status        ViolationStatus @default(OPEN)
+  justification String?         // provided by the employee
+  decidedById   String?
+  decisionNote  String?
+  decidedAt     DateTime?
+  createdAt     DateTime        @default(now())
+  report        ExpenseReport   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  expense       Expense?        @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  rule          PolicyRule?     @relation(fields: [ruleId], references: [id])
+
+  @@index([reportId])
+  @@index([status, severity])
+}
+
+model ApprovalTask {
+  id                 String             @id @default(cuid())
+  reportId           String
+  sequence           Int
+  name               String
+  approverType       ApproverType
+  role               Role?
+  approverId         String
+  originalApproverId String?            // set when routed via delegation / escalation
+  status             ApprovalTaskStatus @default(WAITING)
+  activatedAt        DateTime?
+  dueAt              DateTime?
+  decidedAt          DateTime?
+  decidedById        String?
+  comment            String?
+  escalationLevel    Int                @default(0)
+  escalateToRole     Role?
+  slaHours           Int                @default(72)
+  createdAt          DateTime           @default(now())
+  report             ExpenseReport      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  approver           User               @relation("TaskApprover", fields: [approverId], references: [id])
+
+  @@index([approverId, status])
+  @@index([reportId, sequence])
+  @@index([status, dueAt])
+}
+
+model ReportComment {
+  id           String        @id @default(cuid())
+  reportId     String
+  authorId     String
+  body         String
+  kind         String        @default("COMMENT") // COMMENT | INFO_REQUEST | INFO_RESPONSE | SYSTEM
+  attachmentId String?
+  createdAt    DateTime      @default(now())
+  report       ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+// ─────────────────────── Advances & payments ───────────────────────
+
+model Advance {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  employeeId     String
+  legalEntityId  String
+  tripId         String?
+  purpose        String
+  amount         Decimal       @db.Decimal(19, 4)
+  currency       String        @db.Char(3)
+  settledAmount  Decimal       @default(0) @db.Decimal(19, 4)
+  status         AdvanceStatus @default(REQUESTED)
+  approvedById   String?
+  paidAt         DateTime?
+  paymentRef     String?
+  createdAt      DateTime      @default(now())
+  employee       User          @relation(fields: [employeeId], references: [id])
+  legalEntity    LegalEntity   @relation(fields: [legalEntityId], references: [id])
+  trip           Trip?         @relation(fields: [tripId], references: [id])
+  settlements    AdvanceSettlement[]
+
+  @@index([employeeId, status])
+}
+
+model AdvanceSettlement {
+  id        String        @id @default(cuid())
+  advanceId String
+  reportId  String
+  amount    Decimal       @db.Decimal(19, 4)
+  createdAt DateTime      @default(now())
+  advance   Advance       @relation(fields: [advanceId], references: [id])
+  report    ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([advanceId, reportId])
+}
+
+model PaymentBatch {
+  id            String             @id @default(cuid())
+  reference     String             @unique
+  legalEntityId String
+  currency      String             @db.Char(3)
+  method        PaymentMethod      @default(BANK_TRANSFER)
+  status        PaymentBatchStatus @default(DRAFT)
+  totalAmount   Decimal            @default(0) @db.Decimal(19, 4)
+  paymentDate   DateTime?          @db.Date
+  createdById   String
+  initiatedAt   DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime           @default(now())
+  legalEntity   LegalEntity        @relation(fields: [legalEntityId], references: [id])
+  payments      Payment[]
+
+  @@index([legalEntityId, status])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  batchId       String
+  reportId      String
+  amount        Decimal       @db.Decimal(19, 4)
+  currency      String        @db.Char(3)
+  status        PaymentStatus @default(PENDING)
+  bankReference String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  batch         PaymentBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  report        ExpenseReport @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+}
+
+// ─────────────────────────── Budgets ───────────────────────────
+
+model Budget {
+  id            String          @id @default(cuid())
+  legalEntityId String
+  code          String
+  name          String
+  fiscalYear    Int
+  month         Int?            // null = annual budget
+  departmentId  String?
+  costCenterId  String?
+  projectId     String?
+  categoryId    String?
+  currency      String          @db.Char(3)
+  initialAmount Decimal         @db.Decimal(19, 4)
+  revisedAmount Decimal?        @db.Decimal(19, 4)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  legalEntity   LegalEntity     @relation(fields: [legalEntityId], references: [id])
+  department    Department?     @relation(fields: [departmentId], references: [id])
+  costCenter    CostCenter?     @relation(fields: [costCenterId], references: [id])
+  project       Project?        @relation(fields: [projectId], references: [id])
+  category      ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  alerts        BudgetAlert[]
+
+  @@unique([legalEntityId, code, fiscalYear])
+  @@index([legalEntityId, fiscalYear])
+}
+
+model BudgetAlert {
+  id          String   @id @default(cuid())
+  budgetId    String
+  threshold   Int      // 80 | 90 | 100
+  consumption Decimal  @db.Decimal(9, 4)
+  triggeredAt DateTime @default(now())
+  budget      Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, threshold])
+}
+
+// ─────────────────────────── Accounting ───────────────────────────
+
+model EntityAccountingConfig {
+  id                     String      @id @default(cuid())
+  legalEntityId          String      @unique
+  erpFormat              ErpFormat   @default(GENERIC)
+  journalCode            String
+  employeePayableAccount String
+  vatRecoverableAccount  String
+  advanceAccount         String
+  bankAccount            String
+  corporateCardAccount   String      // clearing account for corporate-card / company-paid lines
+  fxGainAccount          String
+  fxLossAccount          String
+  companyCode            String?     // SAP company code / Dynamics legal entity id
+  legalEntity            LegalEntity @relation(fields: [legalEntityId], references: [id])
+}
+
+model AccountMapping {
+  id                 String          @id @default(cuid())
+  legalEntityId      String
+  categoryId         String
+  glAccount          String
+  analyticalAccount  String?
+  vatCode            String?
+  vatDeductiblePct   Decimal         @default(100) @db.Decimal(5, 2)
+  legalEntity        LegalEntity     @relation(fields: [legalEntityId], references: [id])
+  category           ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([legalEntityId, categoryId])
+}
+
+model AccountingPeriod {
+  id            String       @id @default(cuid())
+  legalEntityId String
+  period        String       // "YYYY-MM"
+  status        PeriodStatus @default(OPEN)
+  closedAt      DateTime?
+  closedById    String?
+  legalEntity   LegalEntity  @relation(fields: [legalEntityId], references: [id])
+
+  @@unique([legalEntityId, period])
+}
+
+enum ExportKind {
+  EXPENSES
+  PAYMENTS
+}
+
+model AccountingExport {
+  id            String      @id @default(cuid())
+  legalEntityId String
+  kind          ExportKind  @default(EXPENSES)
+  period        String
+  erpFormat     ErpFormat
+  reportCount   Int
+  lineCount     Int
+  totalDebit    Decimal     @db.Decimal(19, 4)
+  totalCredit   Decimal     @db.Decimal(19, 4)
+  createdById   String
+  createdAt     DateTime    @default(now())
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  lines         JournalLine[]
+
+  @@index([legalEntityId, period])
+}
+
+model JournalLine {
+  id               String           @id @default(cuid())
+  exportId         String
+  reportId         String
+  legalEntityId    String
+  period           String
+  documentDate     DateTime         @db.Date
+  lineNo           Int
+  account          String
+  analyticalAccount String?
+  costCenter       String?
+  projectCode      String?
+  vatCode          String?
+  description      String
+  debit            Decimal          @default(0) @db.Decimal(19, 4)
+  credit           Decimal          @default(0) @db.Decimal(19, 4)
+  currency         String           @db.Char(3)
+  txnAmount        Decimal?         @db.Decimal(19, 4)
+  txnCurrency      String?          @db.Char(3)
+  employeeRef      String?
+  export           AccountingExport @relation(fields: [exportId], references: [id], onDelete: Cascade)
+  report           ExpenseReport    @relation(fields: [reportId], references: [id])
+
+  @@index([exportId])
+  @@index([reportId])
+}
+
+// ─────────────────────── Notifications & audit ───────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  emailedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+// Append-only: UPDATE/DELETE are blocked by a database trigger (see migration).
+model AuditLog {
+  id            String   @id @default(cuid())
+  groupId       String
+  actorId       String?
+  action        String
+  entityType    String
+  entityId      String
+  legalEntityId String?
+  data          Json?
+  ip            String?
+  createdAt     DateTime @default(now())
+  group         Group    @relation(fields: [groupId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([legalEntityId, createdAt])
+}
