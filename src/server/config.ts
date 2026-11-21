@@ -28,7 +28,9 @@ let cached: AppConfig | null = null;
 
 export function config(): AppConfig {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  // Treat empty variables as unset: docker compose passes `VAR: ${VAR:-}` as "" when not provided.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined && v.trim() !== ""));
+  const parsed = schema.safeParse(env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment configuration: ${issues}`);
