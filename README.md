@@ -33,12 +33,13 @@ npm run db:seed               # optional demo data (fictional "Atlas Group")
 npm run dev                   # http://localhost:3000
 ```
 
-With Docker:
+With Docker (Windows, macOS or Linux):
 
-```bash
-APP_SECRET=$(openssl rand -base64 48) docker compose up --build
-APP_SECRET=... docker compose run --rm seed     # optional demo data
-```
+1. Create a file named `.env` next to `docker-compose.yml` containing one line:
+   `APP_SECRET=<a random string of at least 32 characters>`
+2. Start the stack (first build takes a few minutes): `docker compose up --build`
+3. Optional demo data, in a second terminal: `docker compose run --rm seed`
+4. Open http://localhost:3000
 
 ### Demo accounts
 

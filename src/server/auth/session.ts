@@ -54,7 +54,8 @@ export async function createSession(userId: string, meta: { ip?: string | null; 
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: config().NODE_ENV === "production",
+    // HTTPS-only whenever the app is served over HTTPS (always the case in production behind TLS)
+    secure: config().APP_URL.startsWith("https://"),
     sameSite: "lax",
     path: "/",
     expires: expiresAt,

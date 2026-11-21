@@ -40,7 +40,8 @@ services:
       APP_SECRET: ${APP_SECRET:?Set APP_SECRET}
       STORAGE_LOCAL_DIR: /app/storage
     volumes: [receipts:/app/storage]
-    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+    # Receipts are written as root here; hand them to the app's runtime user (uid 1001)
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && chown -R 1001:1001 /app/storage"
 
 volumes:
   pgdata:

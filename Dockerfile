@@ -19,7 +19,7 @@ RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" APP_SECRET="bui
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates tini && rm -rf /var/lib/apt/lists/* \
-  && groupadd --system app && useradd --system --gid app --home /app app
+  && groupadd --system --gid 1001 app && useradd --system --uid 1001 --gid app --home /app app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static
