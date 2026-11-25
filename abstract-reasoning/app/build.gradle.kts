@@ -37,11 +37,20 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all {
+                // Robolectric's Android runtime is resolved by Gradle (cached, proxy-aware) and used offline.
+                it.dependsOn("copyRobolectricRuntime")
+                it.systemProperty("robolectric.offline", "true")
+                it.systemProperty("robolectric.dependency.dir", layout.buildDirectory.dir("robolectric-runtime").get().asFile.absolutePath)
+                it.systemProperty("screenshots", System.getProperty("screenshots") ?: "")
+                it.maxHeapSize = "3g"
+            }
         }
     }
 
@@ -52,7 +61,15 @@ android {
     }
 }
 
+val robolectricRuntime: Configuration by configurations.creating { isTransitive = false }
+
+tasks.register<Copy>("copyRobolectricRuntime") {
+    from(robolectricRuntime)
+    into(layout.buildDirectory.dir("robolectric-runtime"))
+}
+
 dependencies {
+    robolectricRuntime("org.robolectric:android-all-instrumented:15-robolectric-12650502-i7")
     implementation(project(":puzzle"))
 
     implementation(libs.androidx.core.ktx)

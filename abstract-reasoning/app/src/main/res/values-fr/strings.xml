@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Abstract Reasoning</string>
+
+    <string name="home_tagline">100 niveaux de logique visuelle</string>
+    <string name="home_welcome">Repérez la règle cachée et prédisez la suite. Dix chapitres vous mènent des motifs simples aux déductions de niveau expert.</string>
+    <string name="home_welcome_back">Bon retour. Votre prochain défi vous attend.</string>
+    <string name="home_next_up">À suivre : niveau %1$d · %2$s</string>
+    <string name="label_overall_progress">Progression globale</string>
+    <string name="label_levels_lower">niveaux</string>
+
+    <string name="title_levels">Niveaux</string>
+    <string name="title_stats">Statistiques</string>
+    <string name="title_settings">Réglages</string>
+    <string name="title_about">À propos</string>
+
+    <string name="action_back">Retour</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_continue">Continuer</string>
+    <string name="action_continue_level">Continuer · Niveau %1$d</string>
+    <string name="action_start_challenge">Commencer le défi</string>
+    <string name="action_start_challenge_over">Recommencer au niveau 1</string>
+    <string name="action_check">Valider</string>
+    <string name="action_hint_count">Indice %1$d/%2$d</string>
+    <string name="action_no_hints">Plus d\'indices</string>
+    <string name="action_try_again">Réessayer</string>
+    <string name="action_show_solution">Voir la solution</string>
+    <string name="action_see_results">Résultats du chapitre</string>
+    <string name="action_next_chapter">Chapitre suivant</string>
+    <string name="action_replay_chapter">Rejouer ce chapitre</string>
+    <string name="action_home">Accueil</string>
+
+    <string name="puzzle_header">Chapitre %1$d · Niveau %2$d</string>
+    <string name="level_of_chapter">Niveau %1$d sur %2$d</string>
+    <string name="chapter_completed_count">%1$d/10 résolus</string>
+    <string name="label_choose_answer">Choisissez votre réponse</string>
+    <string name="label_pick_odd">Touchez la figure qui ne suit pas la règle</string>
+    <string name="label_start">Départ</string>
+    <string name="label_follows_rules">Respectent les règles</string>
+    <string name="label_breaks_rules">Enfreignent une règle</string>
+    <string name="label_why">Pourquoi</string>
+    <string name="hint_number">Indice %1$d</string>
+    <string name="feedback_correct_title">Correct</string>
+    <string name="feedback_perfect_title">Parfait</string>
+    <string name="feedback_wrong_title">Pas tout à fait</string>
+    <string name="feedback_wrong_body">Cette option enfreint la règle. Regardez à nouveau ou affichez la solution.</string>
+    <string name="feedback_revealed_title">Voici la solution</string>
+    <string name="feedback_revealed_body">Le niveau suivant est débloqué. Rejouez ce niveau plus tard pour gagner des étoiles.</string>
+    <string name="feedback_time">Résolu en %1$s</string>
+    <string name="feedback_time_best">Résolu en %1$s · nouveau record</string>
+    <plurals name="stars_earned">
+        <item quantity="one">%1$d étoile gagnée</item>
+        <item quantity="other">%1$d étoiles gagnées</item>
+    </plurals>
+
+    <string name="type_sequence">Suite logique</string>
+    <string name="type_matrix">Matrice à compléter</string>
+    <string name="type_transformation">Transformations</string>
+    <string name="type_odd">Intrus</string>
+    <string name="type_relationship">Relation visuelle</string>
+    <string name="type_multi_rule">Règles multiples</string>
+
+    <string name="difficulty_easy">Facile</string>
+    <string name="difficulty_medium">Moyen</string>
+    <string name="difficulty_hard">Difficile</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="difficulty_master">Maître</string>
+
+    <string name="state_selected">Sélectionnée</string>
+    <string name="state_correct">Bonne réponse</string>
+    <string name="state_wrong">Incorrecte</string>
+    <string name="state_locked">Verrouillé</string>
+
+    <string name="cd_missing_cell">Figure manquante</string>
+    <string name="cd_becomes">devient</string>
+    <string name="cd_timer">Temps écoulé %1$s, objectif %2$d secondes</string>
+    <string name="cd_level_locked">Niveau %1$d, verrouillé</string>
+    <string name="cd_level_available">Niveau %1$d, disponible</string>
+    <string name="cd_level_completed">Niveau %1$d, terminé avec %2$d étoiles sur 3</string>
+
+    <string name="chapter_number">Chapitre %1$d</string>
+
+    <string name="label_complete">terminé</string>
+    <string name="results_title_done">%1$s maîtrisé</string>
+    <string name="results_title_progress">%1$s en cours</string>
+    <string name="results_stars">%1$d étoiles sur %2$d</string>
+    <string name="results_correct">Bonnes réponses</string>
+    <string name="results_accuracy">Précision</string>
+    <string name="results_total_time">Temps total</string>
+    <string name="results_completion">Niveaux terminés</string>
+    <string name="results_next_unlocked">Chapitre suivant débloqué</string>
+    <string name="results_next_locked">Chapitre suivant verrouillé</string>
+    <string name="results_next_name">Chapitre %1$d · %2$s</string>
+    <string name="results_finale_title">Les 100 niveaux sont terminés</string>
+    <string name="results_finale_body">Vous maîtrisez tous les chapitres. Rejouez les niveaux pour réunir les 300 étoiles.</string>
+
+    <string name="stats_levels_completed">Niveaux terminés</string>
+    <string name="stats_total_stars">Étoiles</string>
+    <string name="stats_accuracy">Précision globale</string>
+    <string name="stats_avg_time">Temps moyen</string>
+    <string name="stats_correct">Bonnes réponses</string>
+    <string name="stats_perfect">Niveaux parfaits</string>
+    <string name="stats_best_chapter">Meilleur chapitre</string>
+    <string name="stats_by_chapter">Étoiles par chapitre</string>
+    <string name="stats_personal_bests">Records personnels</string>
+
+    <string name="settings_gameplay">Jeu</string>
+    <string name="settings_display">Affichage</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_data">Données</string>
+    <string name="settings_sound">Effets sonores</string>
+    <string name="settings_sound_desc">Sons discrets pour les sélections et les résultats</string>
+    <string name="settings_haptics">Retour haptique</string>
+    <string name="settings_haptics_desc">Vibrations légères lors des réponses</string>
+    <string name="settings_timer">Afficher le chronomètre</string>
+    <string name="settings_timer_desc">Le temps est toujours mesuré pour les étoiles</string>
+    <string name="settings_theme">Thème</string>
+    <string name="theme_system">Système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="settings_assist">Aide aux couleurs</string>
+    <string name="settings_assist_desc">Lettres (N, T, G, C) dans les formes pour identifier les couleurs</string>
+    <string name="language_system">Langue du système</string>
+    <string name="settings_language_note">Les textes des énigmes (consignes, indices et explications) sont pour l\'instant en anglais.</string>
+    <string name="settings_reset">Réinitialiser la progression</string>
+    <string name="settings_reset_desc">Efface les étoiles, les temps et les niveaux débloqués</string>
+    <string name="settings_reset_done">La progression a été réinitialisée</string>
+    <string name="reset_title">Tout réinitialiser ?</string>
+    <string name="reset_message">Toutes les étoiles, les meilleurs temps et les niveaux débloqués seront effacés. Cette action est irréversible.</string>
+    <string name="reset_confirm">Réinitialiser</string>
+
+    <string name="about_version">Version %1$s</string>
+    <string name="about_body">Abstract Reasoning entraîne la reconnaissance de motifs visuels, le raisonnement inductif et la déduction logique à travers 100 énigmes originales réparties en dix chapitres de difficulté croissante.</string>
+    <string name="about_quality_title">Qualité des énigmes</string>
+    <string name="about_quality_body">Chaque énigme est dessinée en vectoriel à partir de données structurées, et chaque niveau est vérifié automatiquement par un solveur indépendant : la bonne réponse doit être la seule option qu\'une règle cohérente peut expliquer. Les énigmes ambiguës sont rejetées pendant le développement. Toutes les énigmes sont originales et ne proviennent d\'aucun test psychométrique.</string>
+    <string name="about_privacy_title">Confidentialité</string>
+    <string name="about_privacy_body">Le jeu fonctionne entièrement hors ligne. Pas de compte, pas de publicité, aucune collecte de données : votre progression reste sur cet appareil.</string>
+    <string name="about_formats_title">Formats de questions</string>
+    <string name="about_formats_body">Suite logique · Matrice à compléter · Transformations · Intrus · Relation visuelle · Règles multiples</string>
+</resources>

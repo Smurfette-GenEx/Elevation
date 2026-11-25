@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Abstract Reasoning</string>
+
+    <!-- Home -->
+    <string name="home_tagline">100 levels of visual logic</string>
+    <string name="home_welcome">Spot the hidden rule, predict what comes next. Ten chapters take you from simple patterns to expert-level deductions.</string>
+    <string name="home_welcome_back">Welcome back. Your next challenge is waiting.</string>
+    <string name="home_next_up">Next up: level %1$d · %2$s</string>
+    <string name="label_overall_progress">Overall progress</string>
+    <string name="label_levels_lower">levels</string>
+
+    <!-- Titles -->
+    <string name="title_levels">Levels</string>
+    <string name="title_stats">Statistics</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_about">About</string>
+
+    <!-- Actions -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_continue_level">Continue · Level %1$d</string>
+    <string name="action_start_challenge">Start challenge</string>
+    <string name="action_start_challenge_over">Start from level 1</string>
+    <string name="action_check">Check answer</string>
+    <string name="action_hint_count">Hint %1$d/%2$d</string>
+    <string name="action_no_hints">No hints left</string>
+    <string name="action_try_again">Try again</string>
+    <string name="action_show_solution">Show solution</string>
+    <string name="action_see_results">See chapter results</string>
+    <string name="action_next_chapter">Next chapter</string>
+    <string name="action_replay_chapter">Replay this chapter</string>
+    <string name="action_home">Home</string>
+
+    <!-- Puzzle -->
+    <string name="puzzle_header">Chapter %1$d · Level %2$d</string>
+    <string name="level_of_chapter">Level %1$d of %2$d</string>
+    <string name="chapter_completed_count">%1$d/10 solved</string>
+    <string name="label_choose_answer">Choose your answer</string>
+    <string name="label_pick_odd">Tap the figure that does not belong</string>
+    <string name="label_start">Start</string>
+    <string name="label_follows_rules">Follow the rules</string>
+    <string name="label_breaks_rules">Each breaks a rule</string>
+    <string name="label_why">Why</string>
+    <string name="hint_number">Hint %1$d</string>
+    <string name="feedback_correct_title">Correct</string>
+    <string name="feedback_perfect_title">Perfect</string>
+    <string name="feedback_wrong_title">Not quite</string>
+    <string name="feedback_wrong_body">That option breaks the rule. Look again, or see the solution.</string>
+    <string name="feedback_revealed_title">Here is the solution</string>
+    <string name="feedback_revealed_body">The level is unlocked so you can move on. Replay it later to earn stars.</string>
+    <string name="feedback_time">Solved in %1$s</string>
+    <string name="feedback_time_best">Solved in %1$s · new personal best</string>
+    <plurals name="stars_earned">
+        <item quantity="one">%1$d star earned</item>
+        <item quantity="other">%1$d stars earned</item>
+    </plurals>
+
+    <string name="type_sequence">Sequence completion</string>
+    <string name="type_matrix">Missing matrix</string>
+    <string name="type_transformation">Transformation logic</string>
+    <string name="type_odd">Odd one out</string>
+    <string name="type_relationship">Visual relationship</string>
+    <string name="type_multi_rule">Multi-rule deduction</string>
+
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="difficulty_master">Master</string>
+
+    <string name="state_selected">Selected</string>
+    <string name="state_correct">Correct answer</string>
+    <string name="state_wrong">Incorrect</string>
+    <string name="state_locked">Locked</string>
+
+    <!-- Accessibility -->
+    <string name="cd_missing_cell">Missing figure</string>
+    <string name="cd_becomes">becomes</string>
+    <string name="cd_timer">Elapsed time %1$s, target %2$d seconds</string>
+    <string name="cd_level_locked">Level %1$d, locked</string>
+    <string name="cd_level_available">Level %1$d, available</string>
+    <string name="cd_level_completed">Level %1$d, completed with %2$d of 3 stars</string>
+
+    <!-- Levels -->
+    <string name="chapter_number">Chapter %1$d</string>
+
+    <!-- Results -->
+    <string name="label_complete">complete</string>
+    <string name="results_title_done">%1$s mastered</string>
+    <string name="results_title_progress">%1$s in progress</string>
+    <string name="results_stars">%1$d of %2$d stars</string>
+    <string name="results_correct">Correct answers</string>
+    <string name="results_accuracy">Accuracy</string>
+    <string name="results_total_time">Total time</string>
+    <string name="results_completion">Levels completed</string>
+    <string name="results_next_unlocked">Next chapter unlocked</string>
+    <string name="results_next_locked">Next chapter locked</string>
+    <string name="results_next_name">Chapter %1$d · %2$s</string>
+    <string name="results_finale_title">All 100 levels complete</string>
+    <string name="results_finale_body">You have mastered every chapter. Replay levels to collect all 300 stars.</string>
+
+    <!-- Statistics -->
+    <string name="stats_levels_completed">Levels completed</string>
+    <string name="stats_total_stars">Total stars</string>
+    <string name="stats_accuracy">Overall accuracy</string>
+    <string name="stats_avg_time">Average solving time</string>
+    <string name="stats_correct">Correct answers</string>
+    <string name="stats_perfect">Perfect levels</string>
+    <string name="stats_best_chapter">Best chapter</string>
+    <string name="stats_by_chapter">Stars by chapter</string>
+    <string name="stats_personal_bests">Personal bests</string>
+
+    <!-- Settings -->
+    <string name="settings_gameplay">Gameplay</string>
+    <string name="settings_display">Display</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_sound">Sound effects</string>
+    <string name="settings_sound_desc">Soft tones for selections and results</string>
+    <string name="settings_haptics">Haptic feedback</string>
+    <string name="settings_haptics_desc">Gentle vibrations on answers</string>
+    <string name="settings_timer">Show timer</string>
+    <string name="settings_timer_desc">Time is always measured for stars</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_assist">Colour assist</string>
+    <string name="settings_assist_desc">Label colours with letters (N, T, G, C) inside shapes</string>
+    <string name="language_system">System default</string>
+    <string name="settings_language_note">Puzzle texts (prompts, hints and explanations) are currently in English.</string>
+    <string name="settings_reset">Reset progress</string>
+    <string name="settings_reset_desc">Erase all stars, times and unlocked levels</string>
+    <string name="settings_reset_done">Progress has been reset</string>
+    <string name="reset_title">Reset all progress?</string>
+    <string name="reset_message">All stars, best times and unlocked levels will be erased. This cannot be undone.</string>
+    <string name="reset_confirm">Reset</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s</string>
+    <string name="about_body">Abstract Reasoning trains visual pattern recognition, inductive reasoning and logical deduction through 100 original puzzles organised in ten chapters of increasing complexity.</string>
+    <string name="about_quality_title">Puzzle quality</string>
+    <string name="about_quality_body">Every puzzle is drawn from structured data as vector graphics, and every level is checked automatically by an independent solver: the correct answer must be the only option that a consistent rule can explain. Puzzles with more than one defensible answer are rejected during development. All puzzles are original and are not taken from any psychometric test.</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy_body">The game works fully offline. There is no account, no advertising and no data collection; your progress is stored only on this device.</string>
+    <string name="about_formats_title">Question formats</string>
+    <string name="about_formats_body">Sequence completion · Missing matrix · Transformation logic · Odd one out · Visual relationship · Multi-rule deduction</string>
+</resources>
