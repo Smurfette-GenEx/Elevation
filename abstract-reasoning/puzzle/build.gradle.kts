@@ -22,6 +22,7 @@ dependencies {
 tasks.test {
     systemProperty("levels", System.getProperty("levels") ?: "")
     systemProperty("sheets", System.getProperty("sheets") ?: "")
+    systemProperty("web", System.getProperty("web") ?: "")
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

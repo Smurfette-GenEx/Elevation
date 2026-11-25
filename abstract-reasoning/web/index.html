@@ -1,0 +1,645 @@
+<meta charset="utf-8">
+<title>Abstract Reasoning</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred column (max 560px) like a phone app; sticky action bar on puzzle screens. */
+:root {
+  --bg: #F7F6F2; --surface: #FFFEFB; --surface-2: #EDEBE4; --line: #DAD7CE;
+  --fg: #202A38; --muted: #5B6370; --primary: #17233B; --on-primary: #F7F6F2;
+  --teal: #4E9C91; --gold: #D6B66C; --wrong: #B4533F; --hint-bg: #F4EAD2; --hint-fg: #5A4615;
+  /* puzzle inks */
+  --paper: #FFFEFB; --paper-line: #E4E1D8; --guide: #D9D6CC;
+  --ink-n: #17233B; --ink-t: #3F8C81; --ink-g: #B08A35; --ink-c: #C0614F; --ok: #3F8C81; --bad: #B4533F;
+  --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1522; --surface: #17233B; --surface-2: #22304A; --line: #2E3D5B;
+  --fg: #EDEAE2; --muted: #B4BCC8; --primary: #EDEAE2; --on-primary: #17233B;
+  --teal: #6CC0B3; --gold: #D6B66C; --wrong: #E08B78; --hint-bg: #4A3D1E; --hint-fg: #F4EAD2;
+  --paper: #1B2840; --paper-line: #2C3B58; --guide: #34466A;
+  --ink-n: #EDEAE2; --ink-t: #6CC0B3; --ink-g: #E0C27A; --ink-c: #E08B78; --ok: #6CC0B3; --bad: #E08B78;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0E1522; --surface: #17233B; --surface-2: #22304A; --line: #2E3D5B;
+  --fg: #EDEAE2; --muted: #B4BCC8; --primary: #EDEAE2; --on-primary: #17233B;
+  --teal: #6CC0B3; --gold: #D6B66C; --wrong: #E08B78; --hint-bg: #4A3D1E; --hint-fg: #F4EAD2;
+  --paper: #1B2840; --paper-line: #2C3B58; --guide: #34466A;
+  --ink-n: #EDEAE2; --ink-t: #6CC0B3; --ink-g: #E0C27A; --ink-c: #E08B78; --ok: #6CC0B3; --bad: #E08B78;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+#app { max-width: 560px; margin: 0 auto; padding-block: 12px 40px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 2.2rem; line-height: 1.1; }
+h2 { font-size: 1.55rem; line-height: 1.2; }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); }
+.label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; align-items: center; gap: 12px; }
+.grow { flex: 1; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.btn { min-height: 52px; padding: 12px 20px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface);
+  font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; transition: transform .12s, opacity .12s; }
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.btn.quiet { border: none; background: none; min-height: 44px; width: auto; color: var(--muted); }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: none; display: grid; place-items: center; color: var(--fg); }
+.icon-btn:hover { background: var(--surface-2); }
+.bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--teal); border-radius: 8px; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+.stars { display: inline-flex; gap: 2px; color: var(--line); }
+.stars .on { color: var(--gold); }
+.stars.pop .on { animation: pop .45s cubic-bezier(.3,1.6,.5,1) both; }
+.stars.pop .on:nth-child(2) { animation-delay: .18s; } .stars.pop .on:nth-child(3) { animation-delay: .36s; }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes rise { from { opacity: .3; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.view { animation: rise .28s ease-out both; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Home */
+.logo { width: 72px; height: 72px; }
+.home-top { display: flex; justify-content: flex-end; }
+.big-num { font-family: var(--font-display); font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Level map */
+.chapter { display: flex; flex-direction: column; gap: 16px; }
+.chapter.locked { opacity: 0.6; }
+.ring { width: 58px; height: 58px; flex: none; }
+.nodes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px 8px; }
+.node { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.node button { width: 48px; height: 48px; border-radius: 50%; border: 2px solid transparent; font-family: var(--font-display); font-weight: 600; font-size: 1rem;
+  background: var(--surface-2); color: var(--muted); font-variant-numeric: tabular-nums; }
+.node.available button { background: var(--surface); border-color: var(--teal); color: var(--fg); }
+.node.completed button, .node.perfect button { background: var(--primary); color: var(--on-primary); }
+.node.perfect button { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+.node button:disabled { cursor: default; }
+.node .stars svg { width: 10px; height: 10px; }
+
+/* Puzzle */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; align-items: center; gap: 8px; padding-block: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.chip.over { color: var(--gold); }
+.diff { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+.diff i { display: inline-block; width: 4px; border-radius: 1px; background: var(--line); margin-right: 2px; vertical-align: bottom; }
+.diff i.on { background: var(--fg); }
+.cells { display: grid; gap: 8px; justify-content: center; }
+.cell { position: relative; background: var(--paper); border: 1px solid var(--paper-line); border-radius: var(--r-sm); aspect-ratio: 1; max-width: 100%; }
+.cell canvas { position: absolute; inset: 5%; width: 90%; height: 90%; }
+.cell.missing { border: 1.5px dashed var(--guide); display: grid; place-items: center; font-family: var(--font-display); font-size: 1.8rem; color: var(--guide); }
+.pair { display: grid; grid-template-columns: 1fr 32px 1fr; align-items: center; gap: 8px; max-width: 300px; margin: 0 auto; width: 100%; }
+.arrow { text-align: center; color: var(--muted); font-size: 1.3rem; }
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.step { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.step .num { width: 16px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.step canvas, .opt-text canvas { width: 32px; height: 32px; flex: none; }
+.rule-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; }
+.badge { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
+.badge.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.badge.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.hint { display: flex; gap: 10px; padding: 14px; border-radius: var(--r-md); background: var(--hint-bg); color: var(--hint-fg); }
+.options { display: grid; gap: 10px; }
+.options.two { grid-template-columns: repeat(2, minmax(0, 160px)); justify-content: center; }
+.options.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.opt { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 0; text-align: left;
+  display: flex; flex-direction: column; transition: transform .15s, border-color .15s, opacity .15s; }
+.opt .opt-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 6px 0; height: 32px; }
+.letter { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 600; background: var(--surface-2); color: var(--muted); }
+.mark { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 0.8rem; font-weight: 700; }
+.opt .fig { position: relative; aspect-ratio: 1; margin: 0 10px 10px; }
+.opt .fig canvas { width: 100%; height: 100%; }
+.opt.selected { border: 2.5px solid var(--primary); transform: scale(1.03); }
+.opt.selected .letter { background: var(--primary); color: var(--on-primary); }
+.opt.correct { border: 2.5px solid var(--ok); transform: scale(1.03); }
+.opt.wrong { border: 2.5px solid var(--bad); }
+.opt.eliminated { opacity: 0.35; }
+.opt.dimmed { opacity: 0.55; }
+.opt-text { flex-direction: row; align-items: center; gap: 10px; padding: 12px 14px; min-height: 56px; }
+.opt-text .opt-head { display: contents; }
+.action { position: sticky; bottom: 0; margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 16px 18px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -8px 24px rgb(0 0 0 / 0.06); animation: rise .25s ease-out both; }
+.feedback-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; flex: none; }
+.why { background: var(--surface-2); border-radius: var(--r-md); padding: 14px; }
+
+/* Results & stats */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; }
+.tile b { display: block; font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.result-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.result-row:last-child { border-bottom: none; }
+.result-row b { font-weight: 600; }
+
+/* Settings */
+.setting { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.setting:last-child { border-bottom: none; }
+.switch { appearance: none; width: 46px; height: 28px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; flex: none; transition: background .15s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch:checked { background: var(--teal); }
+.switch:checked::after { transform: translateX(18px); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: none; background: none; min-height: 40px; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.danger { color: var(--wrong); }
+.loading { padding: 80px 0; text-align: center; color: var(--muted); }
+@media (max-width: 380px) { h1 { font-size: 1.8rem; } .options.three { gap: 6px; } }
+</style>
+
+<div id="app" aria-live="polite"><p class="loading">Loading puzzles…</p></div>
+
+<script>
+"use strict";
+/* ---------------- data & storage ---------------- */
+let DATA = null;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let progress = store.get("ar-progress-v1", {});
+let settings = Object.assign({ sound: true, timer: true, assist: false, theme: "system" }, store.get("ar-settings-v1", {}));
+const saveProgress = () => store.set("ar-progress-v1", progress);
+const saveSettings = () => store.set("ar-settings-v1", settings);
+function applyTheme() {
+  if (settings.theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", settings.theme);
+}
+applyTheme();
+
+/* ---------------- game rules (same as the Android app) ---------------- */
+const rec = l => progress[l] || { stars: 0, done: false, best: null, attempts: 0, correct: 0, first: null, total: 0 };
+const unlocked = l => l === 1 || rec(l - 1).done || rec(l).done;
+function state(l) {
+  const r = rec(l);
+  if (r.done && r.stars === 3) return "perfect";
+  if (r.done) return "completed";
+  return unlocked(l) ? "available" : "locked";
+}
+function starsFor(ms, target, hints, wrong) {
+  const assists = hints + wrong, t = target * 1000;
+  if (assists === 0 && ms <= t) return 3;
+  if (assists <= 1 && ms <= 2 * t) return 2;
+  return 1;
+}
+function recordAnswer(l, correct, ms, stars) {
+  const r = { ...rec(l) };
+  r.attempts++;
+  if (correct) {
+    r.correct++; r.done = true; r.stars = Math.max(r.stars, stars);
+    r.best = r.best == null ? ms : Math.min(r.best, ms);
+    if (r.first == null) r.first = ms;
+    r.total += ms;
+  }
+  progress[l] = r; saveProgress();
+}
+function recordReveal(l, ms) { const r = { ...rec(l) }; r.done = true; if (r.first == null) r.first = ms; progress[l] = r; saveProgress(); }
+const continueLevel = () => { for (let l = 1; l <= 100; l++) if (unlocked(l) && !rec(l).done) return l; return 100; };
+const started = () => Object.values(progress).some(r => r.attempts > 0 || r.done);
+function chapterSummary(c) {
+  let completed = 0, stars = 0, correct = 0, attempts = 0, time = 0;
+  for (let l = (c - 1) * 10 + 1; l <= c * 10; l++) { const r = rec(l); if (r.done) completed++; stars += r.stars; correct += r.correct; attempts += r.attempts; time += r.first || 0; }
+  return { completed, stars, correct, attempts, time, next: c < 10 && unlocked(c * 10 + 1) };
+}
+function stats() {
+  const rs = Object.values(progress);
+  const correct = rs.reduce((a, r) => a + r.correct, 0), attempts = rs.reduce((a, r) => a + r.attempts, 0);
+  const solve = rs.reduce((a, r) => a + r.total, 0);
+  let best = null;
+  for (let c = 1; c <= 10; c++) { const s = chapterSummary(c); if (s.completed && (!best || s.stars > best.s.stars)) best = { c, s }; }
+  return {
+    completed: rs.filter(r => r.done).length, correct, attempts,
+    accuracy: attempts ? correct / attempts : null, avg: correct ? solve / correct : null,
+    stars: rs.reduce((a, r) => a + r.stars, 0), perfect: rs.filter(r => r.done && r.stars === 3).length, best
+  };
+}
+const fmt = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+/* ---------------- sound (WebAudio, starts after the first tap) ---------------- */
+let audio = null;
+function tone(seq, vol) {
+  if (!settings.sound) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    let t = audio.currentTime;
+    for (const [f, d] of seq) {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = f; o.type = "sine";
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + d + 0.02); t += d;
+    }
+  } catch {}
+}
+const SOUND = {
+  select: () => tone([[1318.5, 0.035]], 0.05),
+  correct: () => tone([[659.3, 0.09], [987.8, 0.16]], 0.09),
+  wrong: () => tone([[246.9, 0.11], [207.7, 0.16]], 0.08),
+  complete: () => tone([[523.3, 0.08], [659.3, 0.08], [784, 0.08], [1046.5, 0.22]], 0.08)
+};
+
+/* ---------------- vector rendering ---------------- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const inkVar = { N: "--ink-n", T: "--ink-t", G: "--ink-g", C: "--ink-c" };
+function prepare(canvas) {
+  const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  const ctx = canvas.getContext("2d"); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h, dpr };
+}
+function drawFigure(canvas, fig) {
+  const { ctx, w, h } = prepare(canvas);
+  const half = Math.min(w, h) / 2 * 0.98, cx = w / 2, cy = h / 2;
+  const X = x => cx + x * half, Y = y => cy + y * half;
+  const stroke = Math.max(1.5, half * 0.045);
+  if (fig.b) {
+    ctx.fillStyle = css("--guide");
+    for (const gy of [-0.62, 0, 0.62]) for (const gx of [-0.62, 0, 0.62]) { ctx.beginPath(); ctx.arc(X(gx), Y(gy), Math.max(1.5, half * 0.025), 0, 7); ctx.fill(); }
+  }
+  for (const e of fig.e) {
+    const color = css(inkVar[e.i]);
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if (e.l) {
+      ctx.lineWidth = stroke * 1.3; ctx.beginPath(); ctx.moveTo(X(e.l[0]), Y(e.l[1])); ctx.lineTo(X(e.l[2]), Y(e.l[3])); ctx.stroke(); continue;
+    }
+    const path = new Path2D();
+    let size;
+    if (e.c) { size = e.c[2]; path.arc(X(e.c[0]), Y(e.c[1]), e.c[2] * half, 0, Math.PI * 2); }
+    else {
+      const p = e.p; path.moveTo(X(p[0]), Y(p[1]));
+      for (let i = 2; i < p.length; i += 2) path.lineTo(X(p[i]), Y(p[i + 1]));
+      path.closePath();
+      let minx = 9, maxx = -9; for (let i = 0; i < p.length; i += 2) { minx = Math.min(minx, p[i]); maxx = Math.max(maxx, p[i]); }
+      size = (maxx - minx) / 2;
+    }
+    const sw = Math.min(stroke, Math.max(1.2, size * half * 0.16));
+    ctx.lineWidth = sw;
+    if (e.f === "s") ctx.fill(path);
+    else {
+      if (e.f === "x") {
+        ctx.save(); ctx.clip(path); ctx.lineWidth = sw * 0.75; const gap = Math.max(sw * 2.6, 5);
+        for (let y = 0; y < h; y += gap) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+        ctx.restore(); ctx.lineWidth = sw;
+      }
+      ctx.stroke(path);
+    }
+    if (settings.assist && size >= 0.18) {
+      let ax, ay;
+      if (e.c) { ax = e.c[0]; ay = e.c[1]; } else { let sx = 0, sy = 0, n = e.p.length / 2; for (let i = 0; i < e.p.length; i += 2) { sx += e.p[i]; sy += e.p[i + 1]; } ax = sx / n; ay = sy / n; }
+      ctx.fillStyle = e.f === "s" ? css("--paper") : color;
+      ctx.font = `700 ${Math.max(9, Math.min(22, size * half * 0.55))}px Inter, sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.i, X(ax), Y(ay));
+    }
+  }
+}
+function drawIcon(canvas, ic) {
+  const { ctx, w } = prepare(canvas);
+  const ink = css("--ink-n"), s = w * 0.07, c = w / 2;
+  ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = s; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const arrowLine = (x1, y1, x2, y2) => {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const a = Math.atan2(y2 - y1, x2 - x1), hd = w * 0.13;
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - hd * Math.cos(a - 0.6), y2 - hd * Math.sin(a - 0.6));
+    ctx.moveTo(x2, y2); ctx.lineTo(x2 - hd * Math.cos(a + 0.6), y2 - hd * Math.sin(a + 0.6)); ctx.stroke();
+  };
+  if (ic.t === "rot") {
+    let sweep = Math.max(-300, Math.min(300, ic.d)); if (Math.abs(sweep) < 60) sweep *= 2;
+    const r = w * 0.32, a0 = -Math.PI / 2, a1 = a0 + sweep * Math.PI / 180;
+    ctx.beginPath(); ctx.arc(c, c, r, a0, a1, sweep < 0); ctx.stroke();
+    const tx = c + r * Math.cos(a1), ty = c + r * Math.sin(a1), dir = sweep > 0 ? 1 : -1;
+    const tg = [-Math.sin(a1) * dir, Math.cos(a1) * dir], nm = [-tg[1], tg[0]], hd = r * 0.45;
+    ctx.beginPath(); ctx.moveTo(tx + tg[0] * hd * 0.6, ty + tg[1] * hd * 0.6);
+    ctx.lineTo(tx - tg[0] * hd * 0.4 + nm[0] * hd * 0.5, ty - tg[1] * hd * 0.4 + nm[1] * hd * 0.5);
+    ctx.lineTo(tx - tg[0] * hd * 0.4 - nm[0] * hd * 0.5, ty - tg[1] * hd * 0.4 - nm[1] * hd * 0.5); ctx.closePath(); ctx.fill();
+  } else if (ic.t === "mir") {
+    ctx.save(); ctx.translate(c, c); ctx.rotate(ic.a * Math.PI / 180); ctx.translate(-c, -c);
+    ctx.strokeStyle = css("--ink-t"); ctx.setLineDash([w * 0.08, w * 0.06]); ctx.lineWidth = s * 0.8;
+    ctx.beginPath(); ctx.moveTo(c, w * 0.06); ctx.lineTo(c, w * 0.94); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = ink; ctx.strokeStyle = ink; ctx.lineWidth = s * 0.7;
+    ctx.beginPath(); ctx.moveTo(w * 0.42, w * 0.3); ctx.lineTo(w * 0.42, w * 0.7); ctx.lineTo(w * 0.14, w * 0.7); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(w * 0.58, w * 0.3); ctx.lineTo(w * 0.58, w * 0.7); ctx.lineTo(w * 0.86, w * 0.7); ctx.closePath(); ctx.stroke();
+    ctx.restore();
+  } else if (ic.t === "swap") {
+    ctx.fillStyle = css(inkVar[ic.a]); ctx.beginPath(); ctx.arc(w * 0.25, c, w * 0.15, 0, 7); ctx.fill();
+    ctx.fillStyle = css(inkVar[ic.b]); ctx.beginPath(); ctx.arc(w * 0.75, c, w * 0.15, 0, 7); ctx.fill();
+    ctx.lineWidth = s * 0.8; arrowLine(w * 0.34, w * 0.22, w * 0.66, w * 0.22); arrowLine(w * 0.66, w * 0.78, w * 0.34, w * 0.78);
+  } else if (ic.t === "inv") {
+    ctx.beginPath(); ctx.arc(w * 0.3, c, w * 0.18, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(w * 0.7, c, w * 0.18 - s / 2, 0, 7); ctx.stroke();
+  } else if (ic.t === "shift") {
+    const L = w * 0.34, dx = Math.sign(ic.dx), dy = Math.sign(ic.dy);
+    arrowLine(c - dx * L, c - dy * L, c + dx * L, c + dy * L);
+  } else if (ic.t === "scale") {
+    ctx.setLineDash([w * 0.06, w * 0.05]); ctx.lineWidth = s * 0.7; ctx.strokeRect(c - w * 0.36, c - w * 0.36, w * 0.72, w * 0.72);
+    ctx.setLineDash([]); ctx.fillRect(c - w * 0.16, c - w * 0.16, w * 0.32, w * 0.32);
+  } else if (ic.t === "rem" || ic.t === "add") {
+    const sub = document.createElement("canvas"); sub.width = w; sub.height = w;
+    sub.getBoundingClientRect = () => ({ width: w / (window.devicePixelRatio || 1), height: w / (window.devicePixelRatio || 1) });
+    drawFigure(sub, ic.g); ctx.drawImage(sub, 0, 0);
+    if (ic.t === "rem") { ctx.strokeStyle = css("--bad"); ctx.lineWidth = s * 1.2; ctx.beginPath(); ctx.moveTo(w * 0.15, w * 0.15); ctx.lineTo(w * 0.85, w * 0.85); ctx.stroke(); }
+    else { ctx.strokeStyle = css("--ok"); ctx.lineWidth = s * 1.1; ctx.beginPath(); ctx.moveTo(w * 0.68, w * 0.2); ctx.lineTo(w * 0.92, w * 0.2); ctx.moveTo(w * 0.8, w * 0.08); ctx.lineTo(w * 0.8, w * 0.32); ctx.stroke(); }
+  }
+}
+function describe(fig) {
+  if (!fig || !fig.e.length) return "empty cell";
+  const inkName = { N: "navy", T: "teal", G: "gold", C: "coral" }, fillName = { s: "solid", o: "outlined", x: "striped" };
+  const groups = {};
+  for (const e of fig.e) { const k = `${inkName[e.i]} ${e.f ? fillName[e.f] + " " : ""}${e.k}`; groups[k] = (groups[k] || 0) + 1; }
+  return Object.entries(groups).map(([k, n]) => n > 1 ? `${n} ${k}s` : k).join("; ");
+}
+function paintAll(root = document) {
+  root.querySelectorAll("canvas[data-fig]").forEach(c => drawFigure(c, FIGS[c.dataset.fig]));
+  root.querySelectorAll("canvas[data-icon]").forEach(c => drawIcon(c, FIGS[c.dataset.icon]));
+}
+let FIGS = [];
+const figCanvas = fig => { FIGS.push(fig); return `<canvas data-fig="${FIGS.length - 1}" role="img" aria-label="${esc(describe(fig))}"></canvas>`; };
+const iconCanvas = ic => { FIGS.push(ic); return `<canvas data-icon="${FIGS.length - 1}" aria-hidden="true"></canvas>`; };
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+
+/* ---------------- small UI pieces ---------------- */
+const STAR = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.2 6.8.8-5 4.6 1.4 6.7L12 17.4 5.9 20.8l1.4-6.7-5-4.6 6.8-.8z"/></svg>`;
+const starRow = (n, size = 18, pop = false) => `<span class="stars${pop ? " pop" : ""}" aria-label="${n} of 3 stars">${[0, 1, 2].map(i => `<span class="${i < n ? "on" : ""}" style="display:inline-flex">${STAR.replace(/18/g, size)}</span>`).join("")}</span>`;
+const ring = (frac, size = 58, stroke = 5, label = true) => {
+  const r = (size - stroke) / 2, C = 2 * Math.PI * r;
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px" aria-label="${Math.round(frac * 100)}% complete">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="${stroke}"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--teal)" stroke-width="${stroke}" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 ${size / 2} ${size / 2})" style="transition:stroke-dashoffset .9s"/>
+    ${label ? `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" fill="var(--fg)" font-size="${size / 4.6}" font-weight="600" font-family="Inter">${Math.round(frac * 100)}%</text>` : ""}</svg>`;
+};
+const LOGO = `<svg class="logo" viewBox="0 0 72 72" aria-hidden="true"><rect width="72" height="72" rx="17" fill="#17233B"/>
+  <circle cx="26" cy="26" r="9" fill="#4E9C91"/><path d="M46 17.5 L55 34 L37 34Z" fill="#D6B66C"/>
+  <rect x="18.5" y="38.5" width="15" height="15" fill="#F7F6F2"/><rect x="38.5" y="38.5" width="15" height="15" rx="3" fill="none" stroke="#7895B5" stroke-width="2"/></svg>`;
+const ICON = {
+  back: `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  gear: `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  hint: `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M9 15c0-2-3-3.5-3-6.5C6 5.2 8.7 3 12 3s6 2.2 6 5.5c0 3-3 4.5-3 6.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  timer: `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 13V9M10 2.5h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  play: `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>`,
+  grid: `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  stats: `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M10 20V6M15 20v-10M20 20V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  lock: `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>`
+};
+const TYPE = { SEQUENCE: "Sequence completion", MATRIX: "Missing matrix", TRANSFORMATION: "Transformation logic", ODD_ONE_OUT: "Odd one out", RELATIONSHIP: "Visual relationship", MULTI_RULE: "Multi-rule deduction" };
+const diffWord = d => d <= 2 ? "Easy" : d <= 4 ? "Medium" : d <= 6 ? "Hard" : d <= 8 ? "Expert" : "Master";
+const diffBadge = d => { const f = Math.max(1, Math.min(5, Math.ceil(d / 2))); return `<span class="diff" aria-label="Difficulty: ${diffWord(d)}"><span aria-hidden="true">${[0, 1, 2, 3, 4].map(i => `<i class="${i < f ? "on" : ""}" style="height:${5 + i * 2}px"></i>`).join("")}</span>${diffWord(d)}</span>`; };
+const topbar = (title, sub = "", extra = "") => `<div class="topbar"><button class="icon-btn" data-go="back" aria-label="Back">${ICON.back}</button>
+  <div class="grow"><h3>${esc(title)}</h3>${sub ? `<div class="muted" style="font-size:.82rem">${esc(sub)}</div>` : ""}</div>${extra}</div>`;
+
+/* ---------------- routing (hash) ---------------- */
+const app = document.getElementById("app");
+let timer = null;
+function go(hash) { if (location.hash === hash || (hash === "" && !location.hash)) route(); else location.hash = hash; }
+function route() {
+  clearInterval(timer); timer = null; FIGS = []; app.onclick = null; app.onchange = null;
+  const h = location.hash.slice(1);
+  let m;
+  if (!DATA) return;
+  if ((m = h.match(/^level-(\d+)$/))) { const l = +m[1]; if (l >= 1 && l <= 100 && unlocked(l)) return puzzleView(l); }
+  else if ((m = h.match(/^results-(\d+)$/))) return resultsView(Math.min(10, Math.max(1, +m[1])));
+  else if (h === "levels") return levelsView();
+  else if (h === "stats") return statsView();
+  else if (h === "prefs") return settingsView();
+  homeView();
+}
+window.addEventListener("hashchange", route);
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-go]"); if (!b) return;
+  const t = b.dataset.go;
+  if (t === "back") { history.length > 1 ? history.back() : go(""); } else go(t);
+});
+function mount(html) { app.innerHTML = `<div class="view">${html}</div>`; requestAnimationFrame(() => paintAll(app)); window.scrollTo(0, 0); }
+
+/* ---------------- views ---------------- */
+function homeView() {
+  const st = stats(), s = started(), next = continueLevel(), ch = DATA.chapters[Math.ceil(next / 10) - 1];
+  mount(`<div class="stack" style="gap:24px">
+    <div class="home-top"><button class="icon-btn" data-go="#prefs" aria-label="Settings">${ICON.gear}</button></div>
+    ${LOGO}
+    <div class="stack" style="gap:8px">
+      <h1>Abstract Reasoning</h1>
+      <p style="color:var(--teal);font-weight:600;font-family:var(--font-display);font-size:1.1rem">100 levels of visual logic</p>
+      <p class="muted">${s ? "Welcome back. Your next challenge is waiting." : "Spot the hidden rule, predict what comes next. Ten chapters take you from simple patterns to expert-level deductions."}</p>
+    </div>
+    <div class="card stack">
+      <span class="label">Overall progress</span>
+      <div class="row"><span class="big-num">${st.completed}</span><span class="muted grow">/ 100 levels</span>
+        <span class="stars"><span class="on" style="display:inline-flex">${STAR}</span></span><b style="font-variant-numeric:tabular-nums">${st.stars} / 300</b></div>
+      <div class="bar"><i style="width:${st.completed}%"></i></div>
+      ${s ? `<p class="muted">Next up: level ${next} · ${esc(ch.title)}</p>` : ""}
+    </div>
+    <div class="stack">
+      ${s ? `<button class="btn primary" data-go="#level-${next}">${ICON.play}Continue · Level ${next}</button>
+             <button class="btn" data-go="#level-1">Start from level 1</button>`
+          : `<button class="btn primary" data-go="#level-1">${ICON.play}Start challenge</button>`}
+      <div class="row"><button class="btn" data-go="#levels">${ICON.grid}Levels</button><button class="btn" data-go="#stats">${ICON.stats}Statistics</button></div>
+    </div></div>`);
+}
+
+function levelsView() {
+  const blocks = DATA.chapters.map(ch => {
+    const sum = chapterSummary(ch.n), open = unlocked((ch.n - 1) * 10 + 1);
+    const nodes = Array.from({ length: 10 }, (_, i) => {
+      const l = (ch.n - 1) * 10 + i + 1, st = state(l), r = rec(l);
+      return `<div class="node ${st}"><button ${st === "locked" ? "disabled" : `data-go="#level-${l}"`} aria-label="Level ${l}, ${st === "locked" ? "locked" : st === "available" ? "available" : `completed with ${r.stars} of 3 stars`}">${st === "locked" ? ICON.lock : l}</button>${r.done ? starRow(r.stars, 10) : ""}</div>`;
+    }).join("");
+    return `<section class="card chapter ${open ? "" : "locked"}" id="ch-${ch.n}">
+      <div class="row"><div class="grow"><div class="eyebrow">Chapter ${ch.n}</div><h3 style="font-size:1.3rem">${esc(ch.title)}</h3>
+        <div class="muted" style="font-size:.85rem">${esc(ch.subtitle)}</div>
+        <div class="row muted" style="gap:4px;font-size:.82rem;margin-top:6px"><span class="stars"><span class="on" style="display:inline-flex">${STAR.replace(/18/g, 14)}</span></span>${sum.stars} / 30</div></div>
+        ${open ? ring(sum.completed / 10) : `<span class="muted" aria-label="Locked">${ICON.lock}</span>`}</div>
+      <div class="nodes">${nodes}</div></section>`;
+  }).join("");
+  mount(`${topbar("Levels")}<div class="stack" style="gap:16px;margin-top:8px">${blocks}</div>`);
+  const target = document.getElementById(`ch-${Math.ceil(continueLevel() / 10)}`);
+  if (target && continueLevel() > 10) requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+}
+
+function cellsGrid(figs, cols, max) {
+  return `<div class="cells" style="grid-template-columns:repeat(${cols},minmax(0,${max}px))">${figs.map(f => f ? `<div class="cell">${figCanvas(f)}</div>` : `<div class="cell missing" aria-label="Missing figure">?</div>`).join("")}</div>`;
+}
+function bodyHtml(p) {
+  const b = p.body;
+  switch (b.kind) {
+    case "sequence": { const items = [...b.frames, null]; const per = items.length <= 4 ? items.length : Math.ceil(items.length / 2); return cellsGrid(items, per, 112); }
+    case "matrix": return cellsGrid(b.cells, b.cols, b.cols === 2 ? 132 : 108);
+    case "transformation": return `<div class="stack" style="align-items:center"><span class="label">Start</span><div style="width:120px">${cellsGrid([b.start], 1, 120)}</div></div>
+      <div class="steps" style="margin-top:14px">${b.steps.map((s, i) => `<div class="step"><span class="num">${i + 1}</span>${iconCanvas(s.icon)}<span>${esc(s.label)}</span></div>`).join("")}</div>`;
+    case "odd": return "";
+    case "relationship": {
+      const pairs = [...b.examples, ...(b.query ? [[b.query, null]] : [])];
+      return `<div class="stack" style="gap:8px">${pairs.map(([a, c]) => `<div class="pair"><div class="cell">${figCanvas(a)}</div><span class="arrow" aria-label="becomes">→</span>${c ? `<div class="cell">${figCanvas(c)}</div>` : `<div class="cell missing" aria-label="Missing figure">?</div>`}</div>`).join("")}</div>`;
+    }
+    case "rule": {
+      const n = Math.max(b.follows.length, b.breaks.length);
+      const grp = (title, ok, list) => `<div class="stack" style="gap:8px"><div class="rule-head"><span class="badge ${ok ? "ok" : "bad"}">${ok ? "✓" : "✕"}</span>${title}</div>${cellsGrid(list, n, 104)}</div>`;
+      return `<div class="stack" style="gap:14px">${grp("Follow the rules", true, b.follows)}${grp("Each breaks a rule", false, b.breaks)}</div>`;
+    }
+  }
+}
+
+function puzzleView(level) {
+  const p = DATA.levels[level - 1], ch = DATA.chapters[p.chapter - 1];
+  const s = { selected: null, phase: "answering", eliminated: new Set(), hints: 0, wrong: 0, elapsed: 0, stars: 0, newBest: false };
+  let last = performance.now();
+  const tick = () => { const now = performance.now(); if (!document.hidden && (s.phase === "answering" || s.phase === "wrong")) s.elapsed += now - last; last = now; const t = document.getElementById("timer"); if (t) { t.textContent = fmt(s.elapsed); t.parentElement.classList.toggle("over", s.elapsed > p.target * 1000); } };
+  const textOpts = !p.options[0].fig;
+  const look = i => {
+    if (s.phase === "answering") return s.eliminated.has(i) ? "eliminated" : i === s.selected ? "selected" : "";
+    if (s.phase === "wrong") return i === s.selected ? "wrong" : s.eliminated.has(i) ? "eliminated" : "";
+    return i === p.correct ? "correct" : s.eliminated.has(i) ? "eliminated" : "dimmed";
+  };
+  const optionsHtml = () => {
+    const cls = textOpts ? "" : p.options.length === 4 ? "two" : "three";
+    return `<div class="options ${cls}" role="radiogroup" aria-label="Answer options">${p.options.map((o, i) => {
+      const lk = look(i), letter = String.fromCharCode(65 + i);
+      const mark = lk === "correct" ? `<span class="mark" style="background:var(--ok)">✓</span>` : lk === "wrong" ? `<span class="mark" style="background:var(--bad)">✕</span>` : "";
+      const dis = s.phase !== "answering" || s.eliminated.has(i);
+      const aria = `Option ${letter}${lk === "selected" ? ", selected" : lk === "correct" ? ", correct answer" : lk === "wrong" || lk === "eliminated" ? ", incorrect" : ""}`;
+      return textOpts
+        ? `<button class="opt opt-text ${lk}" data-opt="${i}" role="radio" aria-checked="${lk === "selected"}" aria-label="${aria}: ${esc(o.label)}" ${dis ? "aria-disabled=\"true\"" : ""}>
+            <span class="opt-head"><span class="letter">${letter}</span></span>${o.icons.map(iconCanvas).join("")}<span class="grow">${esc(o.label)}</span>${mark}</button>`
+        : `<button class="opt ${lk}" data-opt="${i}" role="radio" aria-checked="${lk === "selected"}" aria-label="${aria}" ${dis ? "aria-disabled=\"true\"" : ""}>
+            <span class="opt-head"><span class="letter">${letter}</span>${mark}</span><span class="fig">${figCanvas(o.fig)}</span></button>`;
+    }).join("")}</div>`;
+  };
+  const actionHtml = () => {
+    if (s.phase === "answering") {
+      const left = p.hints.length - s.hints;
+      return `<div class="row"><button class="btn" id="hint-btn" ${left ? "" : "disabled"}>${ICON.hint}${left ? `Hint ${s.hints + 1}/${p.hints.length}` : "No hints left"}</button>
+        <button class="btn primary" id="check" ${s.selected == null ? "disabled" : ""}>Check answer</button></div>`;
+    }
+    if (s.phase === "wrong") return `<div class="stack"><div class="row"><span class="feedback-icon" style="background:var(--bad)">✕</span><div><h3>Not quite</h3><p class="muted" style="font-size:.85rem">That option breaks the rule. Look again, or see the solution.</p></div></div>
+      <div class="row"><button class="btn" id="reveal">Show solution</button><button class="btn primary" id="retry">Try again</button></div></div>`;
+    const last = p.level % 10 === 0;
+    const head = s.phase === "correct"
+      ? `<div class="row"><span class="feedback-icon" style="background:var(--ok)">✓</span><div class="grow"><h3>${s.stars === 3 ? "Perfect" : "Correct"}</h3><p class="muted" style="font-size:.85rem">Solved in ${fmt(s.elapsed)}${s.newBest ? " · new personal best" : ""}</p></div>${starRow(s.stars, 26, true)}</div>`
+      : `<div class="row"><span class="feedback-icon" style="background:var(--ok)">✓</span><div><h3>Here is the solution</h3><p class="muted" style="font-size:.85rem">The next level is unlocked. Replay this one later to earn stars.</p></div></div>`;
+    return `<div class="stack">${head}<div class="why"><span class="label">Why</span><p>${esc(p.explanation)}</p></div>
+      <button class="btn primary" id="next">${last ? "See chapter results" : "Continue"}</button></div>`;
+  };
+  const render = () => {
+    FIGS = [];
+    const solved = Array.from({ length: 10 }, (_, i) => rec((p.chapter - 1) * 10 + i + 1).done).filter(Boolean).length;
+    mount(`${topbar(`Chapter ${p.chapter} · Level ${p.level}`, ch.title, settings.timer ? `<span class="chip" aria-label="Elapsed time, target ${p.target} seconds">${ICON.timer}<span id="timer">${fmt(s.elapsed)}</span></span>` : "")}
+      <div class="stack" style="gap:6px;margin-top:4px"><div class="row muted" style="font-size:.8rem;font-weight:500"><span class="grow">Level ${(p.level - 1) % 10 + 1} of 10</span><span>${solved}/10 solved</span></div>
+        <div class="bar" style="height:6px"><i style="width:${((p.level - 1) % 10 + 1) * 10}%"></i></div></div>
+      <div class="stack" style="gap:6px;margin-top:20px"><div class="row"><span class="eyebrow grow">${TYPE[p.type]}</span>${diffBadge(p.difficulty)}</div>
+        <h2>${esc(p.title)}</h2><p class="muted" style="font-size:1.02rem">${esc(p.prompt)}</p></div>
+      <div style="margin-top:18px">${bodyHtml(p)}</div>
+      ${s.hints ? `<div class="stack" style="gap:8px;margin-top:18px">${p.hints.slice(0, s.hints).map((h, i) => `<div class="hint">${ICON.hint}<div><b style="font-size:.8rem">Hint ${i + 1}</b><p>${esc(h)}</p></div></div>`).join("")}</div>` : ""}
+      <h3 style="font-size:1rem;margin:22px 0 10px">${p.type === "ODD_ONE_OUT" ? "Tap the figure that does not belong" : "Choose your answer"}</h3>
+      ${optionsHtml()}
+      <div class="action">${actionHtml()}</div>`);
+    // keep scroll position stable across re-renders
+  };
+  const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
+  app.onclick = e => {
+    const opt = e.target.closest("[data-opt]");
+    if (opt && s.phase === "answering") { const i = +opt.dataset.opt; if (s.eliminated.has(i)) return; if (s.selected !== i) SOUND.select(); s.selected = i; return rerender(); }
+    const id = e.target.closest("button")?.id;
+    if (id === "hint-btn" && s.hints < p.hints.length) { s.hints++; rerender(); }
+    else if (id === "check" && s.selected != null && s.phase === "answering") {
+      tick();
+      if (s.selected === p.correct) {
+        s.stars = starsFor(s.elapsed, p.target, s.hints, s.wrong);
+        const prev = rec(level).best; s.newBest = prev != null && s.elapsed < prev;
+        recordAnswer(level, true, Math.round(s.elapsed), s.stars); s.phase = "correct"; SOUND.correct(); setTimeout(SOUND.complete, 650);
+      } else { recordAnswer(level, false, 0, 0); s.eliminated.add(s.selected); s.wrong++; s.phase = "wrong"; SOUND.wrong(); }
+      rerender();
+    } else if (id === "retry") { s.phase = "answering"; s.selected = null; rerender(); }
+    else if (id === "reveal") { tick(); recordReveal(level, Math.round(s.elapsed)); s.phase = "revealed"; s.selected = p.correct; rerender(); }
+    else if (id === "next") { app.onclick = null; location.replace(level % 10 === 0 ? `#results-${p.chapter}` : `#level-${level + 1}`); }
+  };
+  render();
+  timer = setInterval(tick, 250);
+}
+
+function resultsView(c) {
+  app.onclick = null;
+  const ch = DATA.chapters[c - 1], s = chapterSummary(c), next = DATA.chapters[c], done = s.completed === 10;
+  if (done) SOUND.complete();
+  mount(`<div class="stack" style="align-items:center;text-align:center;gap:14px;margin-top:20px">
+    <div style="position:relative;width:132px;height:132px">${ring(s.completed / 10, 132, 10, false)}
+      <div style="position:absolute;inset:0;display:grid;place-content:center"><span class="big-num">${s.completed * 10}%</span><span class="muted" style="font-size:.8rem">complete</span></div></div>
+    <span class="eyebrow">Chapter ${c}</span><h2>${esc(ch.title)} ${done ? "mastered" : "in progress"}</h2>
+    ${starRow(Math.floor(s.stars * 3 / 30), 30, true)}<b>${s.stars} of 30 stars</b></div>
+    <div class="card" style="margin-top:20px">
+      <div class="result-row"><span class="muted">Correct answers</span><b>${s.correct}</b></div>
+      <div class="result-row"><span class="muted">Accuracy</span><b>${s.attempts ? Math.round(100 * s.correct / s.attempts) + "%" : "—"}</b></div>
+      <div class="result-row"><span class="muted">Total time</span><b>${fmt(s.time)}</b></div>
+      <div class="result-row"><span class="muted">Levels completed</span><b>${s.completed} / 10</b></div></div>
+    ${next ? `<div class="card row" style="margin-top:14px"><span class="badge ${s.next ? "ok" : ""}" style="width:40px;height:40px;font-size:1rem">${s.next ? "★" : ICON.lock}</span>
+      <div><b>${s.next ? "Next chapter unlocked" : "Next chapter locked"}</b><div class="muted" style="font-size:.85rem">Chapter ${next.n} · ${esc(next.title)}</div></div></div>`
+      : done ? `<div class="card" style="margin-top:14px"><b>All 100 levels complete</b><p class="muted">You have mastered every chapter. Replay levels to collect all 300 stars.</p></div>` : ""}
+    <div class="stack" style="margin-top:22px">
+      ${next && s.next ? `<button class="btn primary" data-go="#level-${c * 10 + 1}">Next chapter</button>` : ""}
+      <button class="btn" data-go="#level-${(c - 1) * 10 + 1}">Replay this chapter</button>
+      <button class="btn" data-go="#levels">Levels</button>
+      <button class="btn quiet" data-go="" style="align-self:center">Home</button></div>`);
+}
+
+function statsView() {
+  app.onclick = null;
+  const st = stats();
+  const bests = Object.entries(progress).filter(([, r]) => r.best != null).sort((a, b) => b[0] - a[0]).slice(0, 8);
+  const tile = (label, value) => `<div class="tile"><b>${value}</b><span class="muted" style="font-size:.82rem">${label}</span></div>`;
+  mount(`${topbar("Statistics")}<div class="stack" style="margin-top:8px">
+    <div class="tiles">${tile("Levels completed", st.completed)}${tile("Total stars", `<span style="color:var(--gold)">${st.stars}</span>`)}
+      ${tile("Overall accuracy", st.accuracy == null ? "—" : Math.round(st.accuracy * 100) + "%")}${tile("Average solving time", st.avg == null ? "—" : fmt(st.avg))}
+      ${tile("Correct answers", st.correct)}${tile("Perfect levels", st.perfect)}</div>
+    ${tile("Best chapter", st.best ? `${st.best.c} · ${esc(DATA.chapters[st.best.c - 1].title)}` : "—")}
+    <span class="label" style="margin-top:8px">Stars by chapter</span>
+    <div class="card stack">${DATA.chapters.map(ch => { const s = chapterSummary(ch.n); return `<div class="stack" style="gap:6px"><div class="row" style="font-size:.9rem"><span class="grow">${ch.n}. ${esc(ch.title)}</span><span class="muted" style="font-variant-numeric:tabular-nums">${s.stars}/30</span></div><div class="bar" style="height:5px"><i style="width:${s.stars / 30 * 100}%;background:var(--gold)"></i></div></div>`; }).join("")}</div>
+    ${bests.length ? `<span class="label" style="margin-top:8px">Personal bests</span><div class="card">${bests.map(([l, r]) => `<div class="result-row"><span><b style="display:inline-block;width:36px">${l}</b>${esc(DATA.levels[l - 1].title)}</span><span class="row" style="gap:10px">${starRow(r.stars, 12)}<b>${fmt(r.best)}</b></span></div>`).join("")}</div>` : ""}
+  </div>`);
+}
+
+function settingsView() {
+  app.onclick = null;
+  const toggle = (key, title, desc) => `<label class="setting" for="set-${key}"><span class="grow"><b style="font-weight:500">${title}</b><br><span class="muted" style="font-size:.82rem">${desc}</span></span>
+    <input type="checkbox" class="switch" id="set-${key}" data-key="${key}" ${settings[key] ? "checked" : ""}></label>`;
+  mount(`${topbar("Settings")}<div class="stack" style="margin-top:8px">
+    <span class="label">Gameplay</span>
+    <div class="card" style="padding:4px 16px">${toggle("sound", "Sound effects", "Soft tones for selections and results")}${toggle("timer", "Show timer", "Time is always measured for stars")}</div>
+    <span class="label" style="margin-top:8px">Display</span>
+    <div class="card stack"><b style="font-weight:500">Theme</b><div class="seg" role="group" aria-label="Theme">
+      ${["system", "light", "dark"].map(t => `<button data-theme-set="${t}" aria-pressed="${settings.theme === t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div></div>
+    <div class="card" style="padding:4px 16px">${toggle("assist", "Colour assist", "Label colours with letters (N, T, G, C) inside shapes")}</div>
+    <span class="label" style="margin-top:8px">Data</span>
+    <div class="card stack" id="reset-box"><div><b class="danger" style="font-weight:600">Reset progress</b><p class="muted" style="font-size:.85rem">Erase all stars, times and unlocked levels in this browser.</p></div>
+      <button class="btn" id="reset-ask">Reset progress…</button></div>
+    <span class="label" style="margin-top:8px">About</span>
+    <div class="card stack"><p>100 original puzzles in ten chapters, from simple visual patterns to multi-rule deductions. Each level was checked by an independent solver: the correct answer is the only option that a consistent rule can explain.</p>
+      <p class="muted" style="font-size:.85rem">Progress is saved only in this browser. No account, no tracking.</p></div>
+  </div>`);
+  app.onchange = e => { const k = e.target.dataset.key; if (k) { settings[k] = e.target.checked; saveSettings(); } };
+  app.onclick = e => {
+    const t = e.target.closest("[data-theme-set]");
+    if (t) { settings.theme = t.dataset.themeSet; saveSettings(); applyTheme(); document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b === t)); return; }
+    const id = e.target.closest("button")?.id, box = document.getElementById("reset-box");
+    if (id === "reset-ask") box.innerHTML = `<b>Reset all progress?</b><p class="muted">All stars, best times and unlocked levels will be erased. This cannot be undone.</p><div class="row"><button class="btn" id="reset-no">Cancel</button><button class="btn primary" id="reset-yes" style="background:var(--wrong);border-color:var(--wrong)">Reset</button></div>`;
+    else if (id === "reset-no") settingsView();
+    else if (id === "reset-yes") { progress = {}; saveProgress(); box.innerHTML = `<b>Progress has been reset.</b>`; }
+  };
+}
+
+/* repaint canvases on resize and theme change */
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => paintAll(app), 120); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => paintAll(app));
+new MutationObserver(() => paintAll(app)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+fetch("puzzles.json").then(r => r.json()).then(d => { DATA = d; route(); })
+  .catch(() => { app.innerHTML = `<p class="loading">The puzzles could not be loaded. Reload the page to try again.</p>`; });
+</script>
